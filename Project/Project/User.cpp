@@ -6,8 +6,17 @@ User::~User(){}
 
 void User::send(string message)
 {
-	if(message.length() > 0)
-		Helper::sendData(_socket, message);
+	if (message.length() > 0)
+	{
+		try
+		{
+			Helper::sendData(_socket, message);
+		}
+		catch (std::exception e)
+		{
+			e.what();
+		}
+	}
 }
 
 string User::getUsername()
@@ -68,7 +77,8 @@ int User::closeRoom()
 	if (_currRoom != nullptr)
 	{
 		re = _currRoom->closeRoom(this);
-		(re != -1) ? clearRoom() : nullptr;
+		if (re != -1)
+			clearRoom();
 	}
 	return re;
 }
