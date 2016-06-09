@@ -13,7 +13,6 @@ bool Room::joinRoom(User * user)
 
 	if (re)
 	{
-
 		
 		string message = SERVER_JOIN_ROOM_SECCESS;//"1100"
 		_users.push_back(user);
