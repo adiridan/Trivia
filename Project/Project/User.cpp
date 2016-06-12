@@ -14,7 +14,7 @@ void User::send(string message)
 		}
 		catch (std::exception e)
 		{
-			e.what();
+			cout << e.what() << endl;
 		}
 	}
 }
@@ -42,6 +42,7 @@ void User::clearRoom()
 bool User::creatRoom(int roomId, string RoomName, int maxUsers, int questionsNo, int questionTime)
 {
 	bool re = _currRoom == nullptr;
+	cout << roomId << ", " << RoomName << ", " << maxUsers << ", " << questionsNo << ", " << questionTime << endl;
 	string message = SERVER_CREAT_ROOM_SECCESS;
 	if (re)
 		_currRoom = new Room(roomId, this, RoomName, maxUsers, questionsNo, questionTime);
@@ -53,11 +54,11 @@ bool User::creatRoom(int roomId, string RoomName, int maxUsers, int questionsNo,
 
 bool User::joinRoom(Room * newRoom)
 {
-	bool re = _currRoom == nullptr;
-	if (re)
+	bool re = false;
+	if (_currRoom == nullptr && newRoom->joinRoom(this))
 	{
+		re = true;
 		_currRoom = newRoom;
-		re = _currRoom->joinRoom(this);
 	}
 	return re;
 }

@@ -1,8 +1,10 @@
 #include <iostream>
-#include "User.h"
-#include "Room.h"
+#include "TriviaServer.h"
 
 int main()
 {	
-
+	TriviaServer trivia;
+	trivia.server();
+	system("pause");
+	return 0;
 }

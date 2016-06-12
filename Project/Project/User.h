@@ -4,6 +4,9 @@
 #include <Windows.h>
 #include <Ws2tcpip.h>
 #include "Helper.h"
+#include <iostream>
+
+using namespace std;
 
 class Room;
 class User

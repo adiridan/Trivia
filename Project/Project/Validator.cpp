@@ -20,6 +20,6 @@ bool Validator::isUsernameValid(string username)
 	if (re)
 		re = username.find(' ') == string::npos;
 	if (re)
-		re = (('z' >= username[0] && username[0] <= 'a') || ('Z' >= username[0] && username[0] <= 'A'));
+		re = (('z' >= username[0] && username[0] >= 'a') || ('Z' >= username[0] && username[0] >= 'A'));
 	return re;
 }

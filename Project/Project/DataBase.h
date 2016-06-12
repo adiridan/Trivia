@@ -22,10 +22,10 @@ public:
 	bool addAnswerToPlayer(int gameID, string username, int questionID, string answer, bool isCorrect, int answerTime);
 
 private:
-	static int callbackCount(void*, int, char**, char**);
-	static int callbackQuestions(void*, int, char**, char**);
-	static int callbackBestScores(void*, int, char**, char**);
-	static int callbackPersonalStatus(void*, int, char**, char**);
+	static int callbackCount(void* notUsed, int argc, char** argv, char** azCol);
+	static int callbackQuestions(void* notUsed, int argc, char** argv, char** azCol);
+	static int callbackBestScores(void* notUsed, int argc, char** argv, char** azCol);
+	static int callbackPersonalStatus(void* notUsed, int argc, char** argv, char** azCol);
 
 	sqlite3* db;
 	char* zErrMsg, count;

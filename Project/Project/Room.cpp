@@ -1,6 +1,6 @@
 #include "Room.h"
 
-Room::Room(int id, User * admin, string name, int maxUsers, int questionNo, int questionTime) : _id(id), _admin(admin), _maxUsers(maxUsers), _questionsNo(questionNo), _questionTime(questionTime)
+Room::Room(int id, User * admin, string name, int maxUsers, int questionNo, int questionTime) : _id(id), _name(name), _admin(admin), _maxUsers(maxUsers), _questionsNo(questionNo), _questionTime(questionTime)
 {
 	_users.push_back(_admin);
 }
@@ -9,7 +9,7 @@ Room::~Room(){}
 
 bool Room::joinRoom(User * user)
 {
-	bool re = _users.size() <= _maxUsers;
+	bool re = _users.size() < _maxUsers;
 
 	if (re)
 	{
@@ -17,8 +17,8 @@ bool Room::joinRoom(User * user)
 		string message = SERVER_JOIN_ROOM_SECCESS;//"1100"
 		_users.push_back(user);
 		
-		message += to_string(_questionsNo);
-		message += to_string(_questionTime);
+		message += Helper::getPaddedNumber(_questionsNo, 2);
+		message += Helper::getPaddedNumber(_questionTime, 2);
 
 		user->send(message);
 		sendMessage(getUsersListMessage());
@@ -30,15 +30,11 @@ bool Room::joinRoom(User * user)
 
 void Room::leaveRoom(User * user)
 {
-	for (int i = 0;i < _users.size();i++)
-	{
-		if (_users[i]->getSocket() == user->getSocket())
-		{
-			_users.erase(_users.begin() + i);
-			user->send(SERVER_LEAVE_ROOM);
-			sendMessage(user, getUsersListMessage());
-		}
-	}
+	int i;
+	for (i = 0;i < _users.size() && _users[i]->getSocket() != user->getSocket() ;i++);
+	_users.erase(_users.begin() + i);
+	user->send(SERVER_LEAVE_ROOM);
+	sendMessage(user, getUsersListMessage());
 }
 
 int Room::closeRoom(User * user)
@@ -101,9 +97,7 @@ string Room::getUsersListMessage()
 	message += to_string(_users.size());
 	for (int i = 0; i < _users.size();i++)
 	{
-		if (_users[i]->getUsername().length() < 10)
-			message += '0';
-		message += to_string(_users[i]->getUsername().length());
+		message += Helper::getPaddedNumber(_users[i]->getUsername().length(), 2);
 		message += _users[i]->getUsername();
 	}
 	return message;
