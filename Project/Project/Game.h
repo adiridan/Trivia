@@ -1,20 +1,40 @@
 #pragma once
-#include <map>
-#include<vector>
+
+#include <vector>
+#include "Question.h"
 #include "User.h"
 #include "DataBase.h"
+#include <map>
 
 using namespace std;
 
 class Game
 {
 public:
-	Game(const vector<User*>& players, int questionNo, DataBase& db);
+	Game(const vector<User*>& players, int questionsNo, DataBase& db);
+	~Game();
+
+	void sendFirstQuestion();
+	void handleFinishGame();
+	bool handleNextTurn();
+	bool handleAnswerFromUser(User* user, int answerNo, int time);
+	bool leaveGame(User* currUser);
+	int getID();
+
+
+
 
 private:
-	map<string, int> _results;
-	//vector<Questions*> _questions
+	vector<Question*> _questions;
 	vector<User*> _players;
-	int _question_no, _currQuestionIndex, _currTurnAnswers;
-	//DataBase& _db;
+	int _question_no;
+	int _currQuestionIndex;
+	DataBase& _db;
+	map<string, int> _results;
+	int _currentTurnAnswers;
+
+	bool insertGameToDB();
+	void initQuestionsFromDB();
+	void sendQuestionToAllUsers();
+
 };
