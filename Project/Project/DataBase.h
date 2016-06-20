@@ -3,6 +3,8 @@
 #include <vector>
 #include "Question.h"
 #include <sstream>
+#include "Helper.h"
+#include <iostream>
 
 using namespace std;
 
@@ -16,7 +18,7 @@ public:
 	bool isUserAndPassMatch(string username, string password);
 	vector<Question*> initQuestions(int questionsNo);
 	vector<string> getBestScores();
-	vector<string> getPersonalStatus(string);
+	vector<string> getPersonalStatus(string username);
 	int insertNewGame();
 	bool updateGameStatus(int id);
 	bool addAnswerToPlayer(int gameID, string username, int questionID, string answer, bool isCorrect, int answerTime);
@@ -28,8 +30,4 @@ private:
 	static int callbackPersonalStatus(void* notUsed, int argc, char** argv, char** azCol);
 
 	sqlite3* db;
-	char* zErrMsg, count;
-	int id = 0;
-	vector<Question*> questions;
-	vector<string*> scores;
 };
