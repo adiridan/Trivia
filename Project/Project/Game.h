@@ -8,6 +8,7 @@
 
 using namespace std;
 
+class User;
 class Game
 {
 public:
@@ -19,7 +20,7 @@ public:
 	bool handleNextTurn();
 	bool handleAnswerFromUser(User* user, int answerNo, int time);
 	bool leaveGame(User* currUser);
-	int getID();
+	//int getID();
 
 
 
@@ -31,10 +32,10 @@ private:
 	int _currQuestionIndex;
 	DataBase& _db;
 	map<string, int> _results;
-	int _currentTurnAnswers;
+	int _currentTurnAnswers, _id;
 
-	bool insertGameToDB();
-	void initQuestionsFromDB();
+	//bool insertGameToDB();
+//	void initQuestionsFromDB();
 	void sendQuestionToAllUsers();
 
 };

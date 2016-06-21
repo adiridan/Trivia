@@ -15,49 +15,6 @@ DataBase::DataBase()
 		throw exception(s.str().c_str());
 		s.clear();
 	}
-	else if (sqlite3_exec(db, "pragma primary_key = 1;", NULL, 0, &zErrMsg) != SQLITE_OK)
-	{
-		s << "Can't activate primary key: " << zErrMsg;
-		throw exception(s.str().c_str());
-		s.clear();
-	}
-	else if (sqlite3_exec(db, "create table if not exists t_users (username text primary key not null, password text not null, email text not null);", NULL, 0, &zErrMsg) != SQLITE_OK)
-	{
-		s << "Can't create table t_users: " << zErrMsg;
-		throw exception(s.str().c_str());
-		s.clear();
-	}
-	else if (sqlite3_exec(db, "create table if not exists t_games (game_id integer primary key autoincrement not null, status integer not null, start_time datetime not null, end_time datetime);", NULL, 0, &zErrMsg) != SQLITE_OK)
-	{
-		s << "Can't create table t_games: " << zErrMsg;
-		throw exception(s.str().c_str());
-		s.clear();
-	}
-	else if (sqlite3_exec(db, "pragma foreign_keys=1;", NULL, 0, &zErrMsg) != SQLITE_OK)
-	{
-		s << "Can't activate forigen key: " << zErrMsg;
-		throw exception(s.str().c_str());
-		s.clear();
-	}
-	else if (sqlite3_exec(db, "create table if not exists t_players_answers (game_id integer not null, username text not null, question_id				";
-"		integer not null, player_answer text not null, is_correct integer not null, answer_time integer not null, primary key(game_id,username,			";
-"		question_id), foreign key(game_id) references t_games(game_id),foreign key(username) references t_users(username),foreign key(question_id)		";
-"		references t_questions(question_id));", NULL, 0, &zErrMsg) != SQLITE_OK)
-	{
-		s << "Can't create table t_players_answers: " << zErrMsg;
-		throw exception(s.str().c_str());
-		s.clear();
-	}
-	
-	//adding questions:
-	/*
-	else if (sqlite3_exec(db, ";", NULL, 0, &zErrMsg) != SQLITE_OK)
-	{
-	s << "Can't create table t_players_answers: " << zErrMsg;
-	throw exception(s.str().c_str());
-	s.clear();
-	}
-	*/
 }
 
 DataBase::~DataBase()
@@ -133,6 +90,8 @@ vector<string> DataBase::getBestScores()
 	char* zErrMsg;
 	err << "SQL error: ";
 	s << "select username,max(win_count) as max_count from (select username,count(*) as win_count from t_players_answers where is_correct == 1 group by username) group by username order by max_count desc limit 3;";
+	scores.clear();
+
 	if (sqlite3_exec(db, s.str().c_str(), callbackBestScores, 0, &zErrMsg) != SQLITE_OK)
 	{
 		err << zErrMsg;
@@ -143,16 +102,19 @@ vector<string> DataBase::getBestScores()
 
 int DataBase::insertNewGame()
 {
-	stringstream s, err;
+	stringstream err;
 	char* zErrMsg;
+	int re;
 	err << "SQL error: ";
-	s << "insert into t_games(status, start_time, end_time) values(0, datetime('now'), NULL);";
-	if (sqlite3_exec(db, s.str().c_str(), NULL, 0, &zErrMsg) != SQLITE_OK)
+	if (sqlite3_exec(db, "insert into t_games(status, start_time, end_time) values(0, datetime('now'), NULL);", NULL, 0, &zErrMsg) != SQLITE_OK)
 	{
 		err << zErrMsg;
 		throw exception(err.str().c_str());
+		re = -1;
 	}
-	return sqlite3_last_insert_rowid(db);
+	else
+		re = sqlite3_last_insert_rowid(db);
+	return re;
 }
 
 bool DataBase::updateGameStatus(int id)
@@ -177,12 +139,8 @@ bool DataBase::addAnswerToPlayer(int gameID, string username, int questionID, st
 	char* zErrMsg;
 	stringstream s, err;
 	err << "SQL error: ";
+	s << "insert into t_players_answers values(" << gameID << ",'" << username << "'," << questionID << ",'" << answer << "'," << (isCorrect ? 1:0) << "," << answerTime << ");";
 	
-	
-	s << "insert into t_players_answers(game_id, username, question_id, player_answer, is_correct, answer_time) values(1,'adi', 6, 'answer', 0, 5);";
-	
-	
-	//s << "insert into t_players_answers values(" << gameID << ",'" << username << "'," << questionID << ",'" << answer << "'," << (isCorrect ? 1:0) << "," << answerTime << ");";
 	if (sqlite3_exec(db, s.str().c_str(), NULL, 0, &zErrMsg) != SQLITE_OK)
 	{
 		re = false;
@@ -197,12 +155,9 @@ vector<string> DataBase::getPersonalStatus(string username)
 	char* zErrMsg;
 	stringstream s, err;
 	err << "SQL error: ";
-	
-
-	
 	s << "select count(distinct game_id), sum(is_correct), count(*) - sum(is_correct), avg(answer_time) from t_players_answers where username='" << username << "'";
-
 	scores.clear();
+	
 	if (sqlite3_exec(db, s.str().c_str(), callbackPersonalStatus, 0, &zErrMsg) != SQLITE_OK)
 	{
 		err << zErrMsg;

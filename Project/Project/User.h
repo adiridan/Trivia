@@ -5,9 +5,10 @@
 #include <Ws2tcpip.h>
 #include "Helper.h"
 #include <iostream>
+#include "Game.h"
 
 using namespace std;
-
+class Game;
 class Room;
 class User
 {
@@ -21,10 +22,10 @@ public:
 	string getUsername();
 	SOCKET getSocket();
 	
-	//Game* getGame();
-	//void setGame(Game* gm);
-	//void clearGame();
-	//bool leavGame();
+	Game* getGame();
+	void setGame(Game* gm);
+	void clearGame();
+	bool leavGame();
 	
 	Room* getRoom();
 	void clearRoom();
@@ -36,6 +37,6 @@ public:
 private:
 	string _username;
 	Room* _currRoom;
-	//Game* _currGame;
+	Game* _currGame;
 	SOCKET _socket;
 };

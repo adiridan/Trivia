@@ -2,28 +2,23 @@
 
 Game::Game(const vector<User*>& players, int questionsNo, DataBase& db) : _db(db)
 {
-	if (_db.insertNewGame())
+	_id = _db.insertNewGame();
+	if (_id != -1)
 	{
-		_db.initQuestions(questionsNo);
+		_questions = _db.initQuestions(questionsNo);
 	}
 	else
 	{
-		throw exception("cant insert new game.");
+		throw exception("ERROR: failed inserting new game");
 	}
 
-	int i;
-	for (i = 0; i < players.size(); i++)
-	{
-		_players.push_back(players[i]);
-	}
+	_players = players;
 
-	for (i = 0; i < _players.size(); i++)
+	for (int i = 0; i < _players.size(); i++)
 	{
 		_results.insert(pair<string, int>(_players[i]->getUsername(), 0));
 		_players[i]->setGame(this);
 	}
-
-
 	
 }
 
@@ -36,56 +31,56 @@ Game::~Game()
 
 	_questions.clear();
 	_players.clear();
+	_results.clear();
 }
 
 void Game::sendQuestionToAllUsers()
 {
-	string que = _questions[_currQuestionIndex]->getQuestion();
-	string msg = "118" + Helper::getPaddedNumber(que.length(), 3) + que;
-	string* ans = _questions[_currQuestionIndex]->getAnswers();
-	msg += Helper::getPaddedNumber(ans[0].length(), 3) + ans[0];
-	msg += Helper::getPaddedNumber(ans[1].length(), 3) + ans[1];
-	msg += Helper::getPaddedNumber(ans[1].length(), 3) + ans[2];
-	msg += Helper::getPaddedNumber(ans[3].length(), 3) + ans[3];
-
+	stringstream msg;
+	string que = _questions[_currQuestionIndex]->getQuestion(), *ans = _questions[_currQuestionIndex]->getAnswers();
 	_currentTurnAnswers = 0;
 
-	for (int i = 0; i < _players.size(); i++)
+	
+	if (que.length() > 0)
 	{
-		try
+		msg << SERVER_SEND_QUESTION << Helper::getPaddedNumber(que.length(), 3) << que << Helper::getPaddedNumber(ans[0].length(), 3) << ans[0] << Helper::getPaddedNumber(ans[1].length(), 3) << ans[1] << Helper::getPaddedNumber(ans[1].length(), 3) << ans[2] << Helper::getPaddedNumber(ans[3].length(), 3) << ans[3];
+		for (int i = 0; i < _players.size(); i++)
 		{
-			_players[i]->send(msg);
-		}
-		catch (exception ex)
-		{
-			_players[i]->getRoom()->getAdmin()->send(SERVER_Problem_Send_Qustions);
+			try
+			{
+				_players[i]->send(msg.str());
+			}
+			catch (exception e)
+			{
+				cout << e.what() << endl;
+			}
 		}
 	}
+	else if(_players.size() > 0)
+		///failure: sending failure message to the admin
+		_players[0]->getRoom()->getUsers()[0]->send(SERVER_SEND_QUESTION + '0');
 }
 
 void Game::handleFinishGame()
 {
-	_db.updateGameStatus(this/*??????????*/);
+//	_db.updateGameStatus(getID());
 
-	//בניית הודעה
-	char userNumber = _players.size()-1;//???????
-	string msg = "121" + Helper::getPaddedNumber(1,1) + userNumber;
+	///בניית הודעה
+	stringstream msg;
 	int i;
-	char score[5];
+
+	msg << SERVER_END_GAME << _players.size();
+
 	for (i = 0; i < _players.size(); i++)
-	{
-		msg += Helper::getPaddedNumber(_players[i]->getUsername().length, 2) + _players[i]->getUsername();
-		itoa(_results.at(_players[i]->getUsername()), score, 10);
-		msg += Helper::getPaddedNumber(5, 2) + score;
-	}
+		msg << Helper::getPaddedNumber(_players[i]->getUsername().length(), 2) << _players[i]->getUsername() << Helper::getPaddedNumber(_results[_players[i]->getUsername()],2);
 	
-	//שליחת הודעה
+	///שליחת הודעה
 	for (i = 0; i < _players.size(); i++)
 	{
 		try
 		{
-			_players[i]->setGame(nullptr);
-			_players[i]->send(msg);
+			_players[i]->clearGame();
+			_players[i]->send(msg.str());
 		}
 		catch (exception ex)
 		{
@@ -101,69 +96,58 @@ void Game::sendFirstQuestion()
 
 bool Game::handleNextTurn()
 {
+	bool re = false;
 	if (_players.size() > 0)
 	{
-		while (_currentTurnAnswers != _players.size());
-
-		if (_question_no != _questions.size())
+		if (_currentTurnAnswers == _players.size())
 		{
-			_question_no++;
-			sendQuestionToAllUsers();
-			return true;
+			if (_question_no != _questions.size())
+			{
+				_question_no++;
+				sendQuestionToAllUsers();
+				re = true;
+			}
+			else
+				handleFinishGame();
 		}
-		
+
 	}
-
-	handleFinishGame();
-	return false;
-
+	else
+		handleFinishGame();
+	return re;
 }
 
 bool Game::handleAnswerFromUser(User* user, int answerNo, int time)
 {
-	_currentTurnAnswers++;
-
-	bool trueORfalse = false;
-	string answer = "";
-	string msg = "120" + Helper::getPaddedNumber(1, 1) + "0";
+	bool isCorrect = false;
+	stringstream msg;
 	
-	//בודק אם התשובה נכונה
+	_currentTurnAnswers++;
+	msg << SERVER_ANSWER;
+	
+	///בודק אם התשובה נכונה
 	if (answerNo == _questions[_currQuestionIndex]->getCorrectAnswerIndex())
 	{
-		_results.at(user->getUsername()) + 1;
-		trueORfalse = true;
-
-		msg = "120" + Helper::getPaddedNumber(1, 1) + "1";
+		_results[user->getUsername()] = _results[user->getUsername()] + 1;
+		isCorrect = true;
 	}
 
-	//מכניס לאנסואר את התשובה
-	if (answerNo != 5)
-	{
-		string* answers = _questions[_currQuestionIndex]->getAnswers();
-		answer = answers[answerNo];
-	}
-
-	if (false == _db.addAnswerToPlayer(this->getID(), user->getUsername(), _currQuestionIndex/*?????*/, answer/*????*/, trueORfalse, time))
-	{
+	                                                                                             ///מוחזרת מחרוזת ריקה, אחרת מוחזרת התשובה שבחרת השחקן answerNo = 5 אם
+	if (!_db.addAnswerToPlayer(_id, user->getUsername(), _questions[_currQuestionIndex]->getID(), (answerNo == 5 ? "" : _questions[_currQuestionIndex]->getAnswers()[answerNo]), isCorrect, time))
 		cout << "addAnswerToPlayer() failed" << endl;
-	}
-
-	user->send(msg);
 	
-	return handleNextTurn();//בודק אם המשחק נגמר או לא
+
+	msg << (isCorrect ? 1 : 0);
+	user->send(msg.str());
+	
+	return handleNextTurn();///בודק אם המשחק נגמר או לא
 }
 
 bool Game::leaveGame(User* currUser)
 {
 	vector<User*>::iterator i;
-
-	for ( i = _players.begin; i < _players.end; i++)
-	{
-		if (*i == currUser)
-		{
-			_players.erase(i);
-		}
-	}
-
+	///או ברגע שהשחקן ימצא _players הלולאה תסתיים בסוף
+	for (i = _players.begin(); i < _players.end() && *i != currUser; i++);
+	_players.erase(i);
 	return handleNextTurn();
 }

@@ -1,6 +1,6 @@
 #include "User.h"
 
-User::User(string username, SOCKET sock) : _username(username), _socket(sock), _currRoom(nullptr)/*, _currGame(nullptr)*/{}
+User::User(string username, SOCKET sock) : _username(username), _socket(sock), _currRoom(nullptr), _currGame(nullptr){}
 
 User::~User(){}
 
@@ -14,7 +14,8 @@ void User::send(string message)
 		}
 		catch (std::exception e)
 		{
-			cout << e.what() << endl;
+//			cout << e.what() << endl;
+			cout << "sending message:" << message << endl;
 		}
 	}
 }
@@ -42,7 +43,6 @@ void User::clearRoom()
 bool User::creatRoom(int roomId, string RoomName, int maxUsers, int questionsNo, int questionTime)
 {
 	bool re = _currRoom == nullptr;
-	cout << roomId << ", " << RoomName << ", " << maxUsers << ", " << questionsNo << ", " << questionTime << endl;
 	string message = SERVER_CREAT_ROOM_SECCESS;
 	if (re)
 		_currRoom = new Room(roomId, this, RoomName, maxUsers, questionsNo, questionTime);
@@ -80,6 +80,33 @@ int User::closeRoom()
 		re = _currRoom->closeRoom(this);
 		if (re != -1)
 			clearRoom();
+	}
+	return re;
+}
+
+void User::setGame(Game* gm)
+{
+	_currRoom = nullptr;
+	_currGame = gm;
+}
+
+Game* User::getGame()
+{
+	return _currGame;
+}
+
+void User::clearGame()
+{
+	_currGame = nullptr;
+}
+
+bool User::leavGame()
+{
+	bool re = false;
+	if (_currGame != nullptr)
+	{
+		re = _currGame->leaveGame(this);
+		_currGame = nullptr;
 	}
 	return re;
 }
