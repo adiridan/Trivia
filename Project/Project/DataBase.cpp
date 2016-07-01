@@ -45,7 +45,7 @@ bool DataBase::addNewUser(string username, string password, string email)
 	char* zErrMsg;
 	stringstream s, err;
 	err << "SQL error: ";
-	s << "insert into t_users values ('" << username << "','" << password << "','" << email << "');";
+	s << "insert into t_users values ('" << username << "','" << encryptUsing_md5(password) << "','" << email << "');";
 	if (sqlite3_exec(db, s.str().c_str(), NULL, 0, &zErrMsg) != SQLITE_OK)
 	{
 		re = false;
@@ -62,7 +62,7 @@ bool DataBase::isUserAndPassMatch(string username, string password)
 	char* zErrMsg;
 	stringstream s, err;
 	err << "SQL error: ";
-	s << "select count(*) from t_users where userName == '" << username << "' and password == '" << password << "';";
+	s << "select count(*) from t_users where userName == '" << username << "' and password == '" << encryptUsing_md5(password) << "';";
 	if (sqlite3_exec(db, s.str().c_str(), callbackCount, 0, &zErrMsg) != SQLITE_OK)
 	{
 		err << zErrMsg;
@@ -216,4 +216,10 @@ int DataBase::callbackPersonalStatus(void * notUsed, int argc, char ** argv, cha
 	}
 	scores.push_back(sstr.str());
 	return 0;
+}
+
+string DataBase::encryptUsing_md5(string str)
+{
+	CryptoDevice cryptoDevice;
+	return cryptoDevice.md5(cryptoDevice.md5("4326446" + str + "some ramdom string") + "End Project!!");
 }
