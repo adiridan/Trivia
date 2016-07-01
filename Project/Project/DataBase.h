@@ -5,7 +5,6 @@
 #include <sstream>
 #include "Helper.h"
 #include <iostream>
-#include "CryptoDevice.h"
 
 using namespace std;
 
@@ -29,7 +28,6 @@ private:
 	static int callbackQuestions(void* notUsed, int argc, char** argv, char** azCol);
 	static int callbackBestScores(void* notUsed, int argc, char** argv, char** azCol);
 	static int callbackPersonalStatus(void* notUsed, int argc, char** argv, char** azCol);
-	static string encryptUsing_md5(string str);
 
 	sqlite3* db;
 };
