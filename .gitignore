@@ -1,6 +1,7 @@
 #ignore sqlit3 and Helper files
 sqlit3.c
 sqlit3.h
+sqlit3.exe
 Helper.cpp
 Helper.h
 
