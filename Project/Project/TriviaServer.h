@@ -10,6 +10,9 @@
 #include "User.h"
 #include <condition_variable>
 #include "Validator.h"
+#include "Game.h"
+#include "DataBase.h"
+#include "Room.h"
 #include <sstream>
 
 #define PORT 8820
@@ -61,7 +64,7 @@ private:
 
 	SOCKET _socket;
 	map <SOCKET, User*> _connectedUsers;
-	//DataBase _db;
+	DataBase _db;
 	map <int, Room*> _roomsList;
 
 	mutex _mtxRecievedMessages;

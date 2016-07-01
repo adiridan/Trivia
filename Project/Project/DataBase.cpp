@@ -32,6 +32,7 @@ bool DataBase::isUserExist(string username)
 	if (sqlite3_exec(db, s.str().c_str(), callbackCount, 0, &zErrMsg) != SQLITE_OK)
 	{
 		err << zErrMsg;
+		sqlite3_free(zErrMsg);
 		throw exception(err.str().c_str());
 	}
 	re = (_count != "0");
@@ -47,9 +48,10 @@ bool DataBase::addNewUser(string username, string password, string email)
 	s << "insert into t_users values ('" << username << "','" << password << "','" << email << "');";
 	if (sqlite3_exec(db, s.str().c_str(), NULL, 0, &zErrMsg) != SQLITE_OK)
 	{
-		err << zErrMsg;
-		throw exception(err.str().c_str());
 		re = false;
+		err << zErrMsg;
+		sqlite3_free(zErrMsg);
+		throw exception(err.str().c_str());
 	}
 	return re;
 }
@@ -64,6 +66,7 @@ bool DataBase::isUserAndPassMatch(string username, string password)
 	if (sqlite3_exec(db, s.str().c_str(), callbackCount, 0, &zErrMsg) != SQLITE_OK)
 	{
 		err << zErrMsg;
+		sqlite3_free(zErrMsg);
 		throw exception(err.str().c_str());
 	}
 	re = (_count != "0");
@@ -76,9 +79,12 @@ vector<Question*> DataBase::initQuestions(int questionsNo)
 	char* zErrMsg;
 	err << "SQL error: ";
 	s << "select * from t_questions order by abs(random()) limit " << questionsNo << ";";
+	questions.clear();
+
 	if (sqlite3_exec(db, s.str().c_str(), callbackQuestions, 0, &zErrMsg) != SQLITE_OK)
 	{
 		err << zErrMsg;
+		sqlite3_free(zErrMsg);
 		throw exception(err.str().c_str());
 	}
 	return questions;
@@ -95,6 +101,7 @@ vector<string> DataBase::getBestScores()
 	if (sqlite3_exec(db, s.str().c_str(), callbackBestScores, 0, &zErrMsg) != SQLITE_OK)
 	{
 		err << zErrMsg;
+		sqlite3_free(zErrMsg);
 		throw exception(err.str().c_str());
 	}
 	return scores;
@@ -108,9 +115,10 @@ int DataBase::insertNewGame()
 	err << "SQL error: ";
 	if (sqlite3_exec(db, "insert into t_games(status, start_time, end_time) values(0, datetime('now'), NULL);", NULL, 0, &zErrMsg) != SQLITE_OK)
 	{
-		err << zErrMsg;
-		throw exception(err.str().c_str());
 		re = -1;
+		err << zErrMsg;
+		sqlite3_free(zErrMsg);
+		throw exception(err.str().c_str());
 	}
 	else
 		re = sqlite3_last_insert_rowid(db);
@@ -128,6 +136,7 @@ bool DataBase::updateGameStatus(int id)
 	{
 		re = false;
 		err << zErrMsg;
+		sqlite3_free(zErrMsg);
 		throw exception(err.str().c_str());
 	}
 	return re;
@@ -145,6 +154,7 @@ bool DataBase::addAnswerToPlayer(int gameID, string username, int questionID, st
 	{
 		re = false;
 		err << zErrMsg;
+		sqlite3_free(zErrMsg);
 		throw exception(err.str().c_str());
 	}
 	return re;
@@ -177,7 +187,7 @@ int DataBase::callbackCount(void * notUsed, int argc, char ** argv, char ** azCo
 
 int DataBase::callbackQuestions(void * notUsed, int argc, char ** argv, char ** azCol)
 {
-	Question* currQuestion;
+	Question* currQuestion = nullptr;
 	currQuestion = new Question(atoi(argv[0]), argv[1], argv[2], argv[3], argv[4], argv[5]);
 	if (currQuestion)
 		questions.push_back(currQuestion);
@@ -197,10 +207,13 @@ int DataBase::callbackBestScores(void * notUsed, int argc, char ** argv, char **
 int DataBase::callbackPersonalStatus(void * notUsed, int argc, char ** argv, char ** azCol)
 {
 	stringstream sstr;
-	string s = argv[3];
-	s = s.substr(0, s.find('.')) + s.substr(s.find('.')+1, s.find('.')+1);
-	sstr << Helper::getPaddedNumber(atoi(argv[0]), 4) << Helper::getPaddedNumber(atoi(argv[1]), 6) << Helper::getPaddedNumber(atoi(argv[2]), 6) << Helper::getPaddedNumber(atoi(s.c_str()), 4);
+	if (argv[3] == nullptr)
+		sstr << /*number of games*/"0000" << /*number of right answers*/"000000" << /*number of wrong answers*/"000000" << /*average time for answer*/"0000";
+	else
+	{
+		string s = argv[3];
+		sstr << Helper::getPaddedNumber(atoi(argv[0]), 4) << Helper::getPaddedNumber(atoi(argv[1]), 6) << Helper::getPaddedNumber(atoi(argv[2]), 6) << Helper::getPaddedNumber(atoi(s.substr(0, s.find('.')).c_str()), 2) << Helper::getPaddedNumber(atoi(s.substr(s.find('.') + 1, s.find('.') + 1).c_str()), 2);
+	}
 	scores.push_back(sstr.str());
-
 	return 0;
 }

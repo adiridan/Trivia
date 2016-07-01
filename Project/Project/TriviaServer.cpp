@@ -2,30 +2,22 @@
 
 static const unsigned int IFACE=0;
 
-TriviaServer::TriviaServer()
+TriviaServer::TriviaServer(): _db()
 {
-	//_db.DataBase();
 	stringstream err;
 	WSADATA wsa_data = {};
-	try
+	if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0)
 	{
-		if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0)
-		{
-			err << "WSAStartup error:" << WSAGetLastError();
-			throw std::exception(err.str().c_str());
-		}
-		_socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if (_socket < 0)
-		{
-			err << "ERROR opening socket:" << WSAGetLastError();
-			throw std::exception(err.str().c_str());
-		}
-		TRACE("starting");
+		err << "WSAStartup error:" << WSAGetLastError();
+		throw std::exception(err.str().c_str());
 	}
-	catch (exception exc1)
+	_socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (_socket < 0)
 	{
-		cout << exc1.what() << endl;
+		err << "ERROR opening socket:" << WSAGetLastError();
+		throw std::exception(err.str().c_str());
 	}
+	TRACE("starting");
 }
 
 TriviaServer::~TriviaServer()
@@ -209,15 +201,15 @@ void TriviaServer::handleRecivedMessages()
 			}
 			else if (msg->getMessageCode() == CLIENT_LEAVE_GAME)
 			{
-				//handleLeaveGame(msg);
+				handleLeaveGame(msg);
 			}
 			else if (msg->getMessageCode() == CLIENT_START_GAME)
 			{
-				//handleStartGame(msg);
+				handleStartGame(msg);
 			}
 			else if (msg->getMessageCode() == CLIENT_ANSWER)
 			{
-				//handlePlayerAnswer(msg);
+				handlePlayerAnswer(msg);
 			}
 			else if (msg->getMessageCode() == CLIENT_CREAT_NEW_ROOM)
 			{
@@ -245,11 +237,11 @@ void TriviaServer::handleRecivedMessages()
 			}
 			else if (msg->getMessageCode() == CLIENT_BEST_SCORE)
 			{
-				//handleGetBestScores(msg);
+				handleGetBestScores(msg);
 			}
 			else if (msg->getMessageCode() == CLIENT_STATUS)
 			{
-				//handleGetPersonalStatus(msg);
+				handleGetPersonalStatus(msg);
 			}
 			else
 			{
@@ -259,8 +251,24 @@ void TriviaServer::handleRecivedMessages()
 		catch (exception ex)
 		{
 			safeDeleteUesr(msg);
+			cout << ex.what() << endl;
 		}
 	}
+}
+
+void TriviaServer::handleGetBestScores(RecievedMessage * msg)
+{
+	stringstream s;
+	vector<string> scores = _db.getBestScores();
+	s << SERVER_BEST_SCORES << scores[0] << scores[1] << scores[2];
+	msg->getUser()->send(s.str());
+}
+
+void TriviaServer::handleGetPersonalStatus(RecievedMessage * msg)
+{
+	stringstream s;
+	s << SERVER_PERSONAL_STATUS << _db.getPersonalStatus(msg->getUser()->getUsername())[0];
+	msg->getUser()->send(s.str());
 }
 
 void TriviaServer::handleSignout(RecievedMessage* msg)
@@ -272,7 +280,7 @@ void TriviaServer::handleSignout(RecievedMessage* msg)
 	
 	handleCloseRoom(msg);
 	handleLeaveRoom(msg);
-	//handleLeaveGame(msg);
+	handleLeaveGame(msg);
 }
 
 void TriviaServer::safeDeleteUesr(RecievedMessage* msg)
@@ -293,40 +301,49 @@ void TriviaServer::safeDeleteUesr(RecievedMessage* msg)
 
 	
 }
-//לשחרר זכרון????
-/*void TriviaServer::handleLeaveGame(RecievedMessage* msg)
+void TriviaServer::handleLeaveGame(RecievedMessage* msg)
 {
-	if (msg->getUser()->leaveGame() == true)
+	if (msg->getUser())
 	{
-		//לשחרר זכרון
+		Game* g = msg->getUser()->getGame();
+		if (msg->getUser()->leavGame() == true)
+			delete g;
 	}
 }
-//handle leave game
 
-//לבדוק
 void TriviaServer::handleStartGame(RecievedMessage* msg)
 {
-	vector<User*> user;
-	user.push_back(msg);
-
-	Game g = new Game(user, _db);
+	Game *game = nullptr;
+	int roomID = msg->getUser()->getRoom()->getId();
+	try
+	{
+		game = new Game(msg->getUser()->getRoom()->getUsers(), msg->getUser()->getRoom()->getQuestionsNo(), _db);
+	}
+	catch (exception e)
+	{
+		msg->getUser()->send(SERVER_SEND_QUESTION + '0');
+		cout << e.what() << endl;
+	}
+	
+	if (game)
+	{
+		game->sendFirstQuestion();
+		_roomsList.erase(_roomsList.find(roomID));
+	}
 }
-//handle start game
 
 void TriviaServer::handlePlayerAnswer(RecievedMessage* msg)
 {
-	Game g = msg->getUser()->getGame();
+	Game *g = msg->getUser()->getGame();
 
 	if (g != NULL)
 	{
-		if (g->handleAnswerFromUser() == FALSE)
+		if (g->handleAnswerFromUser(msg->getUser(), atoi(msg->getValues()[0].c_str()), atoi(msg->getValues()[1].c_str())) == false)
 		{
-			//לשחרר את המשחק מהזכרון
+			delete g;
 		}
 	}
-}*/
-//player answer
-
+}
 
 bool TriviaServer::handleCreateRoom(RecievedMessage* msg)
 {
@@ -454,17 +471,11 @@ Room* TriviaServer::getRoomById(int roomId)
 User* TriviaServer::handleSignin(RecievedMessage* msg)
 {
 	User* user = nullptr;
-	/*
-	WTF?!?!?!?!?!?!?!?!?!!?
-	string username = *val.begin();
-	val.pop_back();
-	string password = *val.begin();
-	*/
+	
 
-//	if (!isUserAndPassMatch(msg->getValues()[0], msg->getValues()[1])
-	//	msg->getUser()->send(SERVER_SIGN_IN_WRONG_DETAILS);//protocol.h
-	/*else*/
-	if (getUserByName(msg->getValues()[0]) != NULL)
+	if (!_db.isUserAndPassMatch(msg->getValues()[0], msg->getValues()[1]))
+		Helper::sendData(msg->getSock(), SERVER_SIGN_IN_WRONG_DETAILS);
+	else if (getUserByName(msg->getValues()[0]) != NULL)
 	{
 		Helper::sendData(msg->getSock(), SERVER_SIGN_IN_ALLREADY_CONNECTAED);
 	}
@@ -491,13 +502,13 @@ bool TriviaServer::handleSignup(RecievedMessage* msg)
 		Helper::sendData(msg->getSock(), SERVER_SIGN_UP_USERNAME_ILEGAL);
 		return false;
 	}
-	/*else if (DataBase::isUserExists())
+	else if (_db.isUserExist(msg->getValues()[0]))
 	{
 		Helper::sendData(msg->getSock(), SERVER_SIGN_UP_USERNAME_ALLREDY_EXIST);
 	}
 	else
 	{
-		if (DataBase::addNewUser(msg->getValues()[0],msg->getValues()[1],msg->getValues()[2]))
+		if (_db.addNewUser(msg->getValues()[0],msg->getValues()[1],msg->getValues()[2]))
 		{
 			Helper::sendData(msg->getSock(), SERVER_SIGN_UP_SUCCESS);
 			return true;
@@ -506,7 +517,7 @@ bool TriviaServer::handleSignup(RecievedMessage* msg)
 		{
 			Helper::sendData(msg->getSock(), SERVER_SIGN_UP_OTHER);
 		}
-	}*/
+	}
 	Helper::sendData(msg->getSock(), SERVER_SIGN_UP_SUCCESS);
 	return true;
 }

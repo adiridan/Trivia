@@ -29,6 +29,6 @@ private:
 
 	vector<User*> _users;
 	User* _admin;
-	int _maxUsers, _questionTime, _questionsNo, _id;
+	unsigned int _maxUsers, _questionTime, _questionsNo, _id;
 	string _name;
 };

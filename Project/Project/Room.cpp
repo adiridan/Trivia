@@ -30,7 +30,7 @@ bool Room::joinRoom(User * user)
 
 void Room::leaveRoom(User * user)
 {
-	int i;
+	unsigned int i;
 	for (i = 0;i < _users.size() && _users[i]->getSocket() != user->getSocket() ;i++);
 	_users.erase(_users.begin() + i);
 	user->send(SERVER_LEAVE_ROOM);
@@ -43,7 +43,7 @@ int Room::closeRoom(User * user)
 	if (user->getSocket() == _admin->getSocket())
 	{
 		sendMessage(SERVER_CLOSE_ROOM);
-		for (int i = 0; i < _users.size();i++)
+		for (unsigned int i = 0; i < _users.size();i++)
 		{
 			if (_users[i]->getSocket() != _admin->getSocket())
 				_users[i]->clearRoom();
@@ -62,7 +62,7 @@ vector<User*> Room::getUsers()
 string Room::getUsersAsString(vector<User*> usersList, User * excludeUser)
 {
 	string users;
-	for (int i = 0; i < usersList.size(); i++)
+	for (unsigned int i = 0; i < usersList.size(); i++)
 	{
 		if (usersList[i]->getSocket() != excludeUser->getSocket())
 			users += ',' + usersList[i]->getUsername();
@@ -77,7 +77,7 @@ void Room::sendMessage(string message)
 
 void Room::sendMessage(User * excludeUser, string message)
 {
-	for (int i = 0; i < _users.size();i++)
+	for (unsigned int i = 0; i < _users.size();i++)
 	{
 		if (excludeUser)
 		{
@@ -95,7 +95,7 @@ string Room::getUsersListMessage()
 	string message = SERVER_USER_IN_ROOM;
 	
 	message += to_string(_users.size());
-	for (int i = 0; i < _users.size();i++)
+	for (unsigned int i = 0; i < _users.size();i++)
 	{
 		message += Helper::getPaddedNumber(_users[i]->getUsername().length(), 2);
 		message += _users[i]->getUsername();

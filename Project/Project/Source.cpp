@@ -1,39 +1,49 @@
 #include <iostream>
-#include "Game.h"
+#include "TriviaServer.h"
 
 int main()
-{	
-	DataBase db;
-	User *u = new User("user", 55), *u2 = new User("user", 65), *u3 = new User("user", 45);
-	Game *game;
-	u->creatRoom(5, "room", 3, 2, 5);
-	u2->joinRoom(u->getRoom());
-	u3->joinRoom(u->getRoom());
-
+{
+	TriviaServer *server = nullptr;
 	try
 	{
-		game = new Game(u->getRoom()->getUsers(), u->getRoom()->getQuestionsNo(), db);
+		server = new TriviaServer();
 	}
 	catch (exception e)
 	{
 		cout << e.what() << endl;
-		delete u;
-		delete u2;
-		delete u3;
-		system("pause");
-		return 0;
 	}
-
-	game->sendFirstQuestion();
-	game->handleAnswerFromUser(u, 2, 5);
-	game->handleAnswerFromUser(u2, 5, 10);
-	game->leaveGame(u3);
-	game->handleAnswerFromUser(u, 2, 5);
-	game->handleAnswerFromUser(u2, 5, 10);
-
-	delete u;
-	delete u2;
-	delete u3;
+	if (server)
+		server->server();
 	system("pause");
 	return 0;
 }
+
+/*
+vector<User*> users;
+DataBase db;
+Game* game = nullptr;
+int ans;
+
+users.push_back(new User("user",52));
+users.push_back(new User("user1", 58));
+users.push_back(new User("user2", 612));
+try
+{
+game = new Game(users, 3, db);
+}
+catch (exception e)
+{
+cout << e.what() << endl;
+}
+
+if (game)
+{
+game->sendFirstQuestion();
+do
+{
+cin >> ans;
+game->handleAnswerFromUser(users[0], 5, 0);
+game->handleAnswerFromUser(users[1], 3, 5);
+} while (game->handleAnswerFromUser(users[2], ans, 8));
+}
+*/

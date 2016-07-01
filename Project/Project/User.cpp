@@ -14,8 +14,7 @@ void User::send(string message)
 		}
 		catch (std::exception e)
 		{
-//			cout << e.what() << endl;
-			cout << "sending message:" << message << endl;
+			cout << e.what() << endl;
 		}
 	}
 }
