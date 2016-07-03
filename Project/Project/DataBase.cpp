@@ -7,7 +7,6 @@ vector<string> scores; // BestScores or personalScore- status
 DataBase::DataBase()
 {
 	stringstream s;
-	char* zErrMsg;
 	if (sqlite3_open("trivia.db", &db))
 	{
 		sqlite3_close(db);
@@ -220,6 +219,15 @@ int DataBase::callbackPersonalStatus(void * notUsed, int argc, char ** argv, cha
 
 string DataBase::encryptUsing_md5(string str)
 {
-	CryptoDevice cryptoDevice;
-	return cryptoDevice.md5(cryptoDevice.md5("4326446" + str + "some ramdom string") + "End Project!!");
+	return _cryptoDevice.md5(_cryptoDevice.md5("4326446" + str + "some ramdom string") + "End Project!!");
+}
+
+string DataBase::encryptAES(string str)
+{
+	return _cryptoDevice.encryptAES(str);
+}
+
+string DataBase::decryptAES(string str)
+{
+	return _cryptoDevice.decryptAES(str);
 }

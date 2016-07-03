@@ -29,7 +29,10 @@ private:
 	static int callbackQuestions(void* notUsed, int argc, char** argv, char** azCol);
 	static int callbackBestScores(void* notUsed, int argc, char** argv, char** azCol);
 	static int callbackPersonalStatus(void* notUsed, int argc, char** argv, char** azCol);
-	static string encryptUsing_md5(string str);
+	string encryptUsing_md5(string str);
+	string encryptAES(string str);
+	string decryptAES(string str);
 
 	sqlite3* db;
+	CryptoDevice _cryptoDevice;
 };
